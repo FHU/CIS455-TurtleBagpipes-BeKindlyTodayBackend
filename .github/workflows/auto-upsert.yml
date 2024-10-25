@@ -1,0 +1,24 @@
+name: Auto Upsert Challenges
+run-name: Auto Upserting Challenges...
+on:
+  workflow_dispatch
+  # pull_request:
+  #   branches:
+  #     - main
+  #   types: [closed]
+  #   paths:
+  #     - db/sql/challenges_upsert.sql
+
+jobs:
+  upsert_production_challenges:
+    if: ${{ github.event.pull_request.merged }}
+    name: Upsert Production Challenges
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Upsert
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: psql --dbname=$DATABASE_URL -f ./db/sql/challenges_upsert.sql

@@ -1,0 +1,56 @@
+name: Publish Database Docker Image
+run-name: Publishing Database Docker Image...
+on:
+  workflow_dispatch
+  # pull_request:
+  #   branches:
+  #     - main
+  #   types: [closed]
+  #   paths:
+  #     - db/dev/*
+  #     - prisma/migrations/**
+
+jobs:
+  push_to_registry_if_merged:
+    if: ${{ github.event.pull_request.merged }}
+    name: Push Docker images to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Database Image
+        id: database_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: evandvance/bekindlytodaydatabase
+
+      - name: Build and push Database Production Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./db
+          file: ./db/Dockerfile
+          push: true
+          tags: evandvance/bekindlytodaydatabase:latest
+          labels: ${{ steps.database_meta.outputs.labels }}
+
+  deploy:
+    name: Deploy Schema Changes to production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v3
+      - name: Install dependencies
+        run: npm install
+      - name: Apply all pending migrations to the database
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}

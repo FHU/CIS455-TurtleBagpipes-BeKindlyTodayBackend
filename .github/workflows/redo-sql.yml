@@ -1,0 +1,90 @@
+name: Redo Seeding Sql
+
+on:
+  workflow_dispatch
+  # push:
+  #   branches-ignore:
+  #     - main
+  #   paths:
+  #     - prisma/migrations/**
+  #     - db/sql/*
+
+jobs:
+  # get_challenges:
+  #   name: Redo Challenges
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - name: Set Up Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.12'
+
+  #     - name: Install Dependecies
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         python -m pip install pandas
+
+  #     - name: Load Challenge Spreadsheet to SQL
+  #       run: python3 ./db/get_challenges_from_spreadsheet.py
+
+  #     - name: Commit files
+  #       run: |
+  #         git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+  #         git config --local user.name "github-actions[bot]"
+  #         git commit -a -m "Redid SQL[bot]"
+  #     - name: Push changes
+  #       uses: ad-m/github-push-action@master
+  #       with:
+  #         github_token: ${{ secrets.GITHUB_TOKEN }}
+  #         branch: ${{ github.ref }}
+
+  redo_sql:
+    name: Redo SQL
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: Mydatabasepassword1
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set Up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '21.x'
+
+      - name: Migrate Deploy
+        run: |
+          npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:Mydatabasepassword1@localhost:5432/postgres
+
+      - name: Redoing SQL
+        run: |
+          psql --dbname=postgresql://postgres:Mydatabasepassword1@localhost:5432/postgres -f ./db/sql/challenges_upsert.sql
+          psql --dbname=postgresql://postgres:Mydatabasepassword1@localhost:5432/postgres -f ./db/sql/dummydata.sql
+          pg_dump --dbname=postgresql://postgres:Mydatabasepassword1@localhost:5432/postgres > ./db/dev/dev_data.sql
+
+      - name: Commit files
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -a -m "Redid SQL[bot]"
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
