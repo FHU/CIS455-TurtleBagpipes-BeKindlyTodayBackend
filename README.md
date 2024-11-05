@@ -18,7 +18,7 @@ This file will not be tracked by git and is unique to your local directory.\
 
 - DATABASE_URL
   - <span style="color:yellow;">**Required**</span>
-  - Contains the url of the postgres docker container
+  - Contains the url of the postgres database
 - Port
   - Optional for development
   - Lists the port that the server will run on
