@@ -1,7 +1,8 @@
 // users.ts - The router for the users model in our API
 
 // Import dependencies
-import express, { Response } from 'express';
+import express from 'express';
+import { uploadFile } from '../FileHandler';
 import { PrismaClient } from '@prisma/client';
 import { jwtVerify } from '@kinde-oss/kinde-node-express';
 import getUser from '../services/UserServices';
@@ -116,7 +117,7 @@ users.put('/bio', async (req, res) => {
 });
 
 users.put('/profilepicture', async (req, res) => {
-  const profilePicture = req.body.profilePicture;
+  const { imageFile } = req.body;
 
   try {
     const user = await getUser(req);
@@ -125,12 +126,17 @@ users.put('/profilepicture', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    const profilePictureURI = await uploadFile({
+      file: imageFile,
+      folderName: `profiles/${user.username}`,
+    });
+
     const modifiedUser = await prisma.user.update({
       where: {
         id: user.id,
       },
       data: {
-        profilePicture: profilePicture,
+        profilePicture: profilePictureURI,
       },
     });
 
