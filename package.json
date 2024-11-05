@@ -13,7 +13,7 @@
     "prod": "npx prisma migrate deploy && npx ts-node ./server.ts",
     "dev:docker": "docker compose --env-file ./.env.dev up --detach && docker compose --env-file ./.env.dev watch",
     "kill-docker": "docker stop db_c api_c && docker remove db_c api_c",
-    "seed-db": "sh ./db/seed-db.sh"
+    "seed-db": "dotenv -r ./.env ./db/seed-db.sh"
   },
   "keywords": [
     "backend",
