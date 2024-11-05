@@ -5,4 +5,6 @@
 DATABASE_URL = "Your Database Url Goes Here"
 #Make sure you do not version control your database url.
 
+#This assumes your database url is in the .env file if I remember correctly...
+npx prisma migrate deploy 
 psql --dbname=${DATABASE_URL} -f ./db/sql/challenges_upsert.sql
