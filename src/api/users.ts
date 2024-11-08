@@ -117,7 +117,15 @@ users.put('/bio', async (req, res) => {
 });
 
 users.put('/profilepicture', async (req, res) => {
-  const { imageFile } = req.body;
+  const { profilePicture } = req.body;
+
+  if (profilePicture === null) {
+    return res
+      .status(400)
+      .json({
+        message: 'Bad Request - Missing profilePicture from request body',
+      });
+  }
 
   try {
     const user = await getUser(req);
@@ -127,7 +135,7 @@ users.put('/profilepicture', async (req, res) => {
     }
 
     const profilePictureURI = await uploadFile({
-      file: imageFile,
+      file: profilePicture,
       folderName: `profiles/${user.username}`,
     });
 
