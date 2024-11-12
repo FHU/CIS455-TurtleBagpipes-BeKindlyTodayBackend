@@ -1,17 +1,18 @@
 // completions.ts - Router for the completions model
 
 // Import dependencies
-import express from 'express';
-import { PrismaClient } from '@prisma/client';
-import getUser from '../services/UserServices';
-import { jwtVerify } from '@kinde-oss/kinde-node-express';
-import { compute_streak } from '../compute_streaks';
-import config from '../config';
+import express from "express";
+import { PrismaClient } from "@prisma/client";
+import getUser from "../services/UserServices";
+import { jwtVerify } from "@kinde-oss/kinde-node-express";
+import { compute_streak } from "../compute_streaks";
+import config from "../config";
+import getTodaysChallenge from "../services/ChallengeServices";
 
 const { inDev } = config;
 
 const verifier = jwtVerify(process.env.KINDE_URL!, {
-  audience: '', //I know this seems odd, but audiences are not configured on kinde and as a result this works
+  audience: "", //I know this seems odd, but audiences are not configured on kinde and as a result this works
 });
 
 // Create router
@@ -20,12 +21,12 @@ const completions = express.Router();
 // Create prisma client
 const prisma = new PrismaClient();
 
-completions.get('/unauth_stats', async (req, res) => {
+completions.get("/unauth_stats", async (req, res) => {
   try {
     const DAY_IN_MS = 86400000;
 
     const start_of_challenge_day =
-      new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z';
+      new Date().toISOString().slice(0, 10) + "T00:00:00.000Z";
 
     const end_of_challenge_day = new Date(
       new Date(start_of_challenge_day).getTime() + DAY_IN_MS
@@ -49,7 +50,7 @@ completions.get('/unauth_stats', async (req, res) => {
     res.status(200).json(response_body);
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
@@ -58,7 +59,7 @@ if (!inDev) {
 }
 
 // Get all completions that pass filter
-completions.get('/', async (req, res) => {
+completions.get("/", async (req, res) => {
   try {
     const completions = await prisma.completion.findMany();
 
@@ -66,17 +67,17 @@ completions.get('/', async (req, res) => {
     res.json(completions);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
 // Get the count of completions that pass a filter
-completions.get('/stats', async (req, res) => {
+completions.get("/stats", async (req, res) => {
   try {
     const DAY_IN_MS = 86400000;
 
     const start_of_challenge_day =
-      new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z';
+      new Date().toISOString().slice(0, 10) + "T00:00:00.000Z";
 
     const end_of_challenge_day = new Date(
       new Date(start_of_challenge_day).getTime() + DAY_IN_MS
@@ -86,7 +87,7 @@ completions.get('/stats', async (req, res) => {
     const user = await getUser(req);
 
     if (user === null) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     const user_id = user.id;
@@ -118,16 +119,16 @@ completions.get('/stats', async (req, res) => {
     res.json(response_body);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-completions.get('/calendar', async (req, res) => {
+completions.get("/calendar", async (req, res) => {
   try {
     const user = await getUser(req);
 
     if (user === null) {
-      res.status(404).json({ message: '404 User Not found' });
+      res.status(404).json({ message: "404 User Not found" });
       return;
     }
 
@@ -146,27 +147,25 @@ completions.get('/calendar', async (req, res) => {
     res.status(200).json({ completion_dates, user_streak });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-completions.get('/today', async (req, res) => {
+completions.get("/today", async (req, res) => {
   try {
     const user = await getUser(req);
 
     if (user === null) {
-      res.status(404).json({ message: 'User not found' });
+      res.status(404).json({ message: "User not found" });
       return;
     }
 
     const user_id = user.id;
 
-    const challenge = await prisma.challenge.findUnique({
-      where: { date: new Date().toISOString() },
-    });
+    const challenge = await getTodaysChallenge();
 
     if (challenge === null) {
-      res.status(404).json({ message: 'No challenge found for today' });
+      res.status(404).json({ message: "No challenge found for today" });
       return;
     }
 
@@ -184,18 +183,16 @@ completions.get('/today', async (req, res) => {
     res.status(200).json(completion);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-completions.get('/all_today', async (req, res) => {
+completions.get("/all_today", async (req, res) => {
   try {
-    const challenge = await prisma.challenge.findUnique({
-      where: { date: new Date().toISOString() },
-    });
+    const challenge = await getTodaysChallenge();
 
     if (challenge === null) {
-      res.status(404).json({ message: 'No challenge found for today' });
+      res.status(404).json({ message: "No challenge found for today" });
       return;
     }
 
@@ -209,25 +206,25 @@ completions.get('/all_today', async (req, res) => {
     });
 
     completions.forEach((completion) => {
-      completion.user.kindeId = 'classified';
+      completion.user.kindeId = "classified";
     });
 
     res.status(200).json(completions);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
 // Get completion based on id
-completions.get('/:id', async (req, res) => {
+completions.get("/:id", async (req, res) => {
   try {
     // declare variable for completion's id
     const completion_id = parseInt(req.params.id);
 
     // Parse the id parameter provided to filter out bad request
     if (Number.isNaN(completion_id)) {
-      res.status(400).json({ message: 'Bad Request, ids must be integers' });
+      res.status(400).json({ message: "Bad Request, ids must be integers" });
       return;
     }
 
@@ -238,7 +235,7 @@ completions.get('/:id', async (req, res) => {
 
     // Check for 404 errors
     if (completion === null) {
-      res.status(404).json({ message: 'Not Found' });
+      res.status(404).json({ message: "Not Found" });
       return;
     }
 
@@ -246,22 +243,18 @@ completions.get('/:id', async (req, res) => {
     res.json(completion);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
 // Post method for completions
-completions.post('/', async (req, res) => {
+completions.post("/", async (req, res) => {
   try {
-    const challenge = await prisma.challenge.findUnique({
-      where: {
-        date: new Date().toISOString(),
-      },
-    });
+    const challenge = await getTodaysChallenge();
 
     // Check that the challenge was found
     if (challenge === null) {
-      res.status(404).json({ message: 'No challenge found for current date.' });
+      res.status(404).json({ message: "No challenge found for current date." });
       return;
     }
 
@@ -269,7 +262,7 @@ completions.post('/', async (req, res) => {
     const user = await getUser(req);
 
     if (user === null) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     const user_id = user.id;
@@ -307,18 +300,18 @@ completions.post('/', async (req, res) => {
     return res.json(new_completion);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ message: 'Internal Server Error' });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-completions.delete('/:id', async (req, res) => {
+completions.delete("/:id", async (req, res) => {
   try {
     // get completion id from parameters
     const completion_id = parseInt(req.params.id);
 
     // Check that the id can be parsed to an integer, return 400 error for bad requests
     if (Number.isNaN(completion_id)) {
-      res.status(400).json({ message: 'Bad Request, ids must be integers' });
+      res.status(400).json({ message: "Bad Request, ids must be integers" });
       return;
     }
 
@@ -326,13 +319,13 @@ completions.delete('/:id', async (req, res) => {
     try {
       await prisma.completion.delete({ where: { id: completion_id } });
     } catch (err) {
-      return res.status(404).json({ message: 'Error - user not found' });
+      return res.status(404).json({ message: "Error - user not found" });
     }
 
     res.sendStatus(204);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
